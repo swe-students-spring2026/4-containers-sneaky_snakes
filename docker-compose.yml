@@ -1,0 +1,20 @@
+services:
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  ml-client:
+    build: ./machine-learning-client
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DBNAME=ml_detections
+      - VIDEO_SOURCE=sample.mp4
+      - HEADLESS=1
+
+volumes:
+  mongo-data:

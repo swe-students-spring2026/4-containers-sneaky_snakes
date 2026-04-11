@@ -4,8 +4,6 @@
 # visual studio code junk
 .vscode/
 
-# claude code
-.claude/
 .vscode/settings.json
 
 # emacs backups

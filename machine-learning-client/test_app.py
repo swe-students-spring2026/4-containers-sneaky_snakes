@@ -105,3 +105,102 @@ class TestDetectObjects:
         model.return_value = [result]
         dets = detect_objects(model, make_frame())
         assert dets == []
+        
+# ── annotate_frame ────────────────────────────────────────────────────────────
+
+class TestAnnotateFrame:
+    @patch("cv2.rectangle")
+    @patch("cv2.putText")
+    def test_draws_for_each_detection(self, mock_text, mock_rect):
+        from app.main import annotate_frame
+        frame = make_frame()
+        dets = [
+            {"label": "person", "confidence": 0.9, "bbox": [10, 20, 100, 200]},
+            {"label": "car",    "confidence": 0.7, "bbox": [50, 60, 200, 300]},
+        ]
+        annotate_frame(frame, dets)
+        assert mock_rect.call_count == 2
+        assert mock_text.call_count == 2
+
+    @patch("cv2.rectangle")
+    @patch("cv2.putText")
+    def test_no_draw_on_empty(self, mock_text, mock_rect):
+        from app.main import annotate_frame
+        annotate_frame(make_frame(), [])
+        mock_rect.assert_not_called()
+        mock_text.assert_not_called()
+
+
+# ── encode_frame_thumbnail ────────────────────────────────────────────────────
+
+class TestEncodeFrameThumbnail:
+    def test_returns_valid_base64_string(self):
+        from app.main import encode_frame_thumbnail
+        frame = make_frame()
+        result = encode_frame_thumbnail(frame)
+        assert isinstance(result, str)
+        # Must decode without error
+        decoded = base64.b64decode(result)
+        assert len(decoded) > 0
+
+    def test_respects_max_width(self):
+        from app.main import encode_frame_thumbnail
+        frame = make_frame(480, 640)
+        # Should not raise even with small max_width
+        result = encode_frame_thumbnail(frame, max_width=160)
+        assert isinstance(result, str)
+
+
+# saving detections 
+
+class TestSaveDetections:
+    def test_inserts_doc_and_returns_id(self):
+        from app.main import save_detections
+        db = MagicMock()
+        db["detections"].insert_one.return_value.inserted_id = "abc123"
+
+        dets = [{"label": "person", "confidence": 0.9, "bbox": [0, 0, 1, 1]}]
+        result = save_detections(db, dets)
+        assert result == "abc123"
+        db["detections"].insert_one.assert_called_once()
+
+    def test_doc_contains_num_objects(self):
+        from app.main import save_detections
+        db = MagicMock()
+        db["detections"].insert_one.return_value.inserted_id = "x"
+
+        dets = [{"label": "cat", "confidence": 0.8, "bbox": [0, 0, 1, 1]}] * 3
+        save_detections(db, dets)
+        inserted_doc = db["detections"].insert_one.call_args[0][0]
+        assert inserted_doc["num_objects"] == 3
+
+    def test_saves_image_when_frame_provided(self):
+        from app.main import save_detections
+        db = MagicMock()
+        db["detections"].insert_one.return_value.inserted_id = "y"
+
+        save_detections(db, [], frame=make_frame())
+        inserted_doc = db["detections"].insert_one.call_args[0][0]
+        assert "image" in inserted_doc
+
+    def test_no_image_key_when_no_frame(self):
+        from app.main import save_detections
+        db = MagicMock()
+        db["detections"].insert_one.return_value.inserted_id = "z"
+
+        save_detections(db, [])
+        inserted_doc = db["detections"].insert_one.call_args[0][0]
+        assert "image" not in inserted_doc
+
+
+# geting th db
+"""
+class TestGetDb:
+    @patch("pymongo.MongoClient")
+    def test_returns_db_object(self, mock_client):
+        from app.main import get_db
+        mock_client.return_value.__getitem__.return_value = MagicMock()
+        db = get_db()
+        assert db is not None
+        mock_client.assert_called_once()
+"""

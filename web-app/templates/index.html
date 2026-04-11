@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if db_error %}
+<div class="error-banner">
+  Database unavailable. Check that MongoDB is running and MONGO_URI is correct.
+</div>
+{% endif %}
+
+<!-- Stats -->
+<section class="stats">
+  <div class="card">
+    <span class="card-label">Total Snapshots</span>
+    <span class="card-value" id="stat-snapshots">{{ stats.total_snapshots }}</span>
+  </div>
+  <div class="card">
+    <span class="card-label">Unique Labels</span>
+    <span class="card-value" id="stat-labels">{{ stats.unique_labels }}</span>
+  </div>
+  <div class="card wide">
+    <span class="card-label">Most Common Objects</span>
+    <div class="tag-list" id="stat-common">
+      {% for item in stats.most_common %}
+        <span class="tag">{{ item.label }} ({{ item.count }})</span>
+      {% else %}
+        <span class="muted">No data yet</span>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Live Feed -->
+<section>
+  <h2>Live Feed <span class="muted">(auto-refreshes every 5s)</span></h2>
+  <div id="feed" class="feed">
+    {% if detections %}
+      {% set latest = detections[0] %}
+      <div class="feed-item">
+        <span class="timestamp">{{ latest.timestamp }}</span>
+        <div class="tag-list">
+          {% for det in latest.get('detections', []) %}
+            <span class="tag">{{ det.label }} {{ "%.0f"|format(det.confidence * 100) }}%</span>
+          {% else %}
+            <span class="muted">No objects detected</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">Waiting for detections...</p>
+    {% endif %}
+  </div>
+</section>
+
+<!-- History Table -->
+<section>
+  <h2>Detection History</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Objects Detected</th>
+        <th>Count</th>
+      </tr>
+    </thead>
+    <tbody id="history-body">
+      {% for doc in detections %}
+        <tr>
+          <td>{{ doc.timestamp }}</td>
+          <td>
+            {% for det in doc.get('detections', []) %}
+              <span class="tag">{{ det.label }}</span>
+            {% else %}
+              <span class="muted">—</span>
+            {% endfor %}
+          </td>
+          <td>{{ doc.get('detections', [])|length }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" class="muted">No records yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  async function refreshFeed() {
+    const res = await fetch("/api/detections");
+    const data = await res.json();
+    if (data.error || !Array.isArray(data) || !data.length) return;
+
+    const latest = data[0];
+    const dets = latest.detections || [];
+    const tags = dets.length
+      ? dets.map(d => `<span class="tag">${escapeHtml(d.label)} ${Math.round(d.confidence * 100)}%</span>`).join("")
+      : `<span class="muted">No objects detected</span>`;
+
+    document.getElementById("feed").innerHTML = `
+      <div class="feed-item">
+        <span class="timestamp">${escapeHtml(latest.timestamp)}</span>
+        <div class="tag-list">${tags}</div>
+      </div>`;
+
+    const tbody = document.getElementById("history-body");
+    tbody.innerHTML = data.map(doc => {
+      const docDets = doc.detections || [];
+      const tagHtml = docDets.length
+        ? docDets.map(d => `<span class="tag">${escapeHtml(d.label)}</span>`).join("")
+        : `<span class="muted">—</span>`;
+      return `<tr><td>${escapeHtml(doc.timestamp)}</td><td>${tagHtml}</td><td>${docDets.length}</td></tr>`;
+    }).join("");
+  }
+
+  async function refreshStats() {
+    const res = await fetch("/api/stats");
+    const data = await res.json();
+    if (data.error) return;
+
+    document.getElementById("stat-snapshots").textContent = data.total_snapshots;
+    document.getElementById("stat-labels").textContent = data.unique_labels;
+
+    const tagList = document.getElementById("stat-common");
+    tagList.innerHTML = data.most_common.length
+      ? data.most_common.map(d => `<span class="tag">${escapeHtml(d.label)} (${d.count})</span>`).join("")
+      : `<span class="muted">No data yet</span>`;
+  }
+
+  async function refresh() {
+    await Promise.all([refreshFeed(), refreshStats()]);
+  }
+
+  setInterval(refresh, 5000);
+</script>
+
+{% endblock %}

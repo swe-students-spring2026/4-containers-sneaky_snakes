@@ -148,3 +148,4 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+machine-learning-client/yolov8n.pt

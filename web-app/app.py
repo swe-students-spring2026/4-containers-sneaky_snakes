@@ -1,73 +1,70 @@
-"""Flask web app for displaying object detection results from MongoDB."""
-
+"""Flask dashboard that reads ML detections from MongoDB."""
+from __future__ import annotations
 import os
-from flask import Flask, render_template, jsonify
+from flask import Flask, jsonify, render_template
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-app = Flask(
-    __name__,
-    template_folder=os.path.join(BASE_DIR, "templates"),
-    static_folder=os.path.join(BASE_DIR, "static"),
-)
+app = Flask(__name__,
+            template_folder=os.path.join(BASE_DIR, "templates"),
+            static_folder=os.path.join(BASE_DIR, "static"))
 
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://mongodb:27017")
-DB_NAME = os.environ.get("DB_NAME", "detection_db")
+DB_NAME = os.environ.get("DB_NAME", "ml_detections")
 COLLECTION_NAME = "detections"
-PORT = int(os.environ.get("PORT", "5000"))
-
-client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-db = client[DB_NAME]
-collection = db[COLLECTION_NAME]
+PORT = int(os.environ.get("PORT", "5001"))
+ML_API_URL = os.environ.get("ML_API_URL", "http://localhost:8000/detect")
 
 
-def get_recent_detections(limit=20):
-    """Return the most recent detection documents."""
-    docs = collection.find({}, {"_id": 0}).sort("timestamp", -1).limit(limit)
+def get_collection():
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+    return client[DB_NAME][COLLECTION_NAME]
+
+
+def get_recent_detections(limit: int = 20):
+    docs = get_collection().find({}, {"_id": 0}).sort("timestamp", -1).limit(limit)
     return list(docs)
 
 
 def get_stats():
-    """Return summary statistics from the detections collection."""
+    collection = get_collection()
     total = collection.count_documents({})
-
-    pipeline = [
+    unique_labels = collection.distinct("detections.label")
+    most_common = list(collection.aggregate([
         {"$unwind": "$detections"},
         {"$group": {"_id": "$detections.label", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 5},
-    ]
-    most_common = list(collection.aggregate(pipeline))
-    unique_labels = collection.distinct("detections.label")
-
+    ]))
     return {
         "total_snapshots": total,
         "unique_labels": len(unique_labels),
-        "most_common": [{"label": d["_id"], "count": d["count"]} for d in most_common],
+        "most_common": [{"label": item["_id"], "count": item["count"]} for item in most_common],
     }
 
 
 @app.route("/")
 def index():
-    """Render the main dashboard."""
-    db_error = False
-    detections = []
-    stats = {"total_snapshots": 0, "unique_labels": 0, "most_common": []}
     try:
         detections = get_recent_detections()
         stats = get_stats()
+        db_error = False
     except PyMongoError:
+        detections = []
+        stats = {"total_snapshots": 0, "unique_labels": 0, "most_common": []}
         db_error = True
     return render_template(
-        "index.html", detections=detections, stats=stats, db_error=db_error
+        "index.html",
+        detections=detections,
+        stats=stats,
+        db_error=db_error,
+        ml_api_url=ML_API_URL,
     )
 
 
 @app.route("/api/detections")
 def api_detections():
-    """Return recent detections as JSON."""
     try:
         return jsonify(get_recent_detections())
     except PyMongoError:
@@ -76,7 +73,6 @@ def api_detections():
 
 @app.route("/api/stats")
 def api_stats():
-    """Return stats as JSON."""
     try:
         return jsonify(get_stats())
     except PyMongoError:

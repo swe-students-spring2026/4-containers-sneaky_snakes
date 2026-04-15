@@ -1,20 +1,52 @@
 services:
   mongodb:
     image: mongo:7
+    container_name: sneaky-snakes-mongodb
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   ml-client:
-    build: ./machine-learning-client
+    build:
+      context: ./machine-learning-client
+    container_name: sneaky-snakes-ml-client
+    restart: unless-stopped
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     environment:
-      - MONGO_URI=mongodb://mongodb:27017
-      - MONGO_DBNAME=ml_detections
-      - VIDEO_SOURCE=sample.mp4
-      - HEADLESS=1
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DBNAME: ml_detections
+      PORT: "8000"
+      CONFIDENCE_THRESHOLD: "0.4"
+    ports:
+      - "8000:8000"
+
+  web-app:
+    build:
+      context: ./web-app
+    container_name: sneaky-snakes-web-app
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      ml-client:
+        condition: service_started
+    ports:
+      - "5001:5001"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      DB_NAME: ml_detections
+      PORT: "5001"
+      ML_API_URL: http://localhost:8000/detect
 
 volumes:
   mongo-data:

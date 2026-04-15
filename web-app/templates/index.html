@@ -8,7 +8,19 @@
 </div>
 {% endif %}
 
-<!-- Stats -->
+<section class="camera-panel">
+  <h2>Camera Capture</h2>
+  <p class="muted">This uses your browser camera, sends snapshots to the ML container, and stores detections in MongoDB.</p>
+  <div class="camera-actions">
+    <button id="start-camera" type="button">Start camera</button>
+    <button id="toggle-capture" type="button" disabled>Start detecting</button>
+    <span id="camera-status" class="muted">Camera idle</span>
+  </div>
+  <video id="camera-preview" autoplay playsinline muted></video>
+  <canvas id="camera-canvas" style="display:none;"></canvas>
+  <div id="last-result" class="feed"><p class="muted">No camera detections yet.</p></div>
+</section>
+
 <section class="stats">
   <div class="card">
     <span class="card-label">Total Snapshots</span>
@@ -30,7 +42,6 @@
   </div>
 </section>
 
-<!-- Live Feed -->
 <section>
   <h2>Live Feed <span class="muted">(auto-refreshes every 5s)</span></h2>
   <div id="feed" class="feed">
@@ -52,7 +63,6 @@
   </div>
 </section>
 
-<!-- History Table -->
 <section>
   <h2>Detection History</h2>
   <table>
@@ -84,6 +94,17 @@
 </section>
 
 <script>
+  const ML_API_URL = {{ ml_api_url|tojson }};
+  const videoEl = document.getElementById("camera-preview");
+  const canvasEl = document.getElementById("camera-canvas");
+  const startBtn = document.getElementById("start-camera");
+  const detectBtn = document.getElementById("toggle-capture");
+  const statusEl = document.getElementById("camera-status");
+  const lastResultEl = document.getElementById("last-result");
+
+  let mediaStream = null;
+  let captureTimer = null;
+
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, "&amp;")
@@ -91,6 +112,69 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  async function startCamera() {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      videoEl.srcObject = mediaStream;
+      detectBtn.disabled = false;
+      statusEl.textContent = "Camera ready";
+    } catch (err) {
+      statusEl.textContent = `Camera error: ${err.message}`;
+    }
+  }
+
+  function stopDetecting() {
+    if (captureTimer) {
+      clearInterval(captureTimer);
+      captureTimer = null;
+    }
+    detectBtn.textContent = "Start detecting";
+    statusEl.textContent = "Camera ready";
+  }
+
+  async function captureAndSend() {
+    if (!mediaStream || videoEl.videoWidth === 0) {
+      return;
+    }
+    const ctx = canvasEl.getContext("2d");
+    canvasEl.width = videoEl.videoWidth;
+    canvasEl.height = videoEl.videoHeight;
+    ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+    const image = canvasEl.toDataURL("image/jpeg", 0.8);
+
+    try {
+      const res = await fetch(ML_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image, source: "browser-camera" })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        statusEl.textContent = `Detect error: ${data.error || res.statusText}`;
+        return;
+      }
+      const tags = (data.detections || []).length
+        ? data.detections.map(d => `<span class="tag">${escapeHtml(d.label)} ${Math.round(d.confidence * 100)}%</span>`).join("")
+        : `<span class="muted">No objects detected in this frame</span>`;
+      lastResultEl.innerHTML = `<div class="feed-item"><div class="tag-list">${tags}</div></div>`;
+      statusEl.textContent = data.saved ? "Detection saved to MongoDB" : "Frame processed";
+      await refresh();
+    } catch (err) {
+      statusEl.textContent = `Network error: ${err.message}`;
+    }
+  }
+
+  function toggleDetecting() {
+    if (captureTimer) {
+      stopDetecting();
+      return;
+    }
+    captureAndSend();
+    captureTimer = setInterval(captureAndSend, 2500);
+    detectBtn.textContent = "Stop detecting";
+    statusEl.textContent = "Detecting every 2.5s";
   }
 
   async function refreshFeed() {
@@ -138,6 +222,8 @@
     await Promise.all([refreshFeed(), refreshStats()]);
   }
 
+  startBtn.addEventListener("click", startCamera);
+  detectBtn.addEventListener("click", toggleDetecting);
   setInterval(refresh, 5000);
 </script>
 

@@ -207,3 +207,35 @@ class TestGetModel:
         main_module.get_model()
         main_module.get_model()
         mock_yolo.assert_called_once()
+        
+# connect_to_db
+class TestConnectToDb:
+    @patch("app.main.time.sleep")
+    @patch("app.main.pymongo.MongoClient")
+    def test_connects_successfully(self, mock_client, mock_sleep):
+        mock_client.return_value.admin.command.return_value = {"ok": 1}
+        from app.main import connect_to_db
+        db = connect_to_db()
+        assert db is not None
+
+   
+
+
+# get_db
+class TestGetDb:
+    @patch("app.main.connect_to_db")
+    def test_returns_db_and_caches(self, mock_connect):
+        mock_connect.return_value = MagicMock()
+        main_module._db = None
+        main_module.get_db()
+        main_module.get_db()
+        mock_connect.assert_called_once()
+
+
+# decode_base64_image invalid
+class TestDecodeBase64ImageInvalid:
+    def test_raises_on_bad_bytes(self):
+        from app.main import decode_base64_image
+        bad_b64 = base64.b64encode(b"not an image").decode()
+        with pytest.raises(ValueError, match="Could not decode image"):
+            decode_base64_image(bad_b64)

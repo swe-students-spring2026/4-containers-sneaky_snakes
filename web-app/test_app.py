@@ -1,8 +1,9 @@
 # Tests for the Flask web app.
-import pytest
-from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
+from unittest.mock import patch
+import pytest
 from app import app as flask_app
+
 
 
 @pytest.fixture
@@ -29,7 +30,7 @@ def fake_stats():
     }
 
 
-#  get_recent_detections 
+#  get_recent_detections
 
 class TestGetRecentDetections:
     @patch("app.get_collection")
@@ -112,7 +113,7 @@ class TestGetStats:
         assert stats["most_common"] == []
 
 
-#  index route 
+#  index route
 
 class TestIndex:
     @patch("app.get_stats")
@@ -146,7 +147,7 @@ class TestIndex:
         assert resp.status_code == 200
 
 
-#  /api/detections 
+#  /api/detections
 
 class TestApiDetections:
     @patch("app.get_recent_detections")
@@ -171,7 +172,7 @@ class TestApiDetections:
         assert client.get("/api/detections").status_code == 503
 
 
-# ---- /api/stats ----
+# /api/stats
 
 class TestApiStats:
     @patch("app.get_stats")

@@ -37,27 +37,23 @@ def make_data_url(frame=None):
 class TestDecodeBase64Image:
     def test_decodes_valid_image(self):
         from app.main import decode_base64_image
-
         frame = decode_base64_image(make_data_url())
         assert frame is not None
         assert frame.shape[2] == 3
 
     def test_raises_on_empty(self):
         from app.main import decode_base64_image
-
         with pytest.raises(ValueError, match="Missing image payload"):
             decode_base64_image("")
 
     def test_resizes_if_too_wide(self):
         from app.main import decode_base64_image
-
         big = make_frame(480, 1920)
         result = decode_base64_image(make_data_url(big))
         assert result.shape[1] <= 960
 
     def test_decodes_without_data_prefix(self):
         from app.main import decode_base64_image
-
         _, buf = cv2.imencode(".jpg", make_frame())
         b64 = base64.b64encode(buf).decode()
         frame = decode_base64_image(b64)
@@ -82,32 +78,24 @@ class TestDetectObjects:
 
     def test_returns_detection_above_threshold(self):
         from app.main import detect_objects
-
-        dets = detect_objects(
-            self._make_mock_model(conf=0.9), make_frame(), confidence_threshold=0.5
-        )
+        dets = detect_objects(self._make_mock_model(conf=0.9), make_frame(), confidence_threshold=0.5)
         assert len(dets) == 1
         assert dets[0]["label"] == "person"
         assert dets[0]["confidence"] == 0.9
 
     def test_filters_below_threshold(self):
         from app.main import detect_objects
-
-        dets = detect_objects(
-            self._make_mock_model(conf=0.3), make_frame(), confidence_threshold=0.5
-        )
+        dets = detect_objects(self._make_mock_model(conf=0.3), make_frame(), confidence_threshold=0.5)
         assert dets == []
 
     def test_bbox_is_list_of_floats(self):
         from app.main import detect_objects
-
         dets = detect_objects(self._make_mock_model(conf=0.8), make_frame())
         assert isinstance(dets[0]["bbox"], list)
         assert len(dets[0]["bbox"]) == 4
 
     def test_empty_boxes(self):
         from app.main import detect_objects
-
         model = MagicMock()
         result = MagicMock()
         result.boxes = []
@@ -119,14 +107,12 @@ class TestDetectObjects:
 class TestEncodeFrameThumbnail:
     def test_returns_valid_base64(self):
         from app.main import encode_frame_thumbnail
-
         result = encode_frame_thumbnail(make_frame())
         assert isinstance(result, str)
         assert len(base64.b64decode(result)) > 0
 
     def test_respects_max_width(self):
         from app.main import encode_frame_thumbnail
-
         result = encode_frame_thumbnail(make_frame(), max_width=160)
         assert isinstance(result, str)
 
@@ -135,7 +121,6 @@ class TestEncodeFrameThumbnail:
 class TestSaveDetectionEvent:
     def test_inserts_and_returns_id(self):
         from app.main import save_detection_event
-
         db = MagicMock()
         db["detections"].insert_one.return_value.inserted_id = "abc123"
         result = save_detection_event(db, [], make_frame(), "test")
@@ -143,7 +128,6 @@ class TestSaveDetectionEvent:
 
     def test_doc_contains_num_objects(self):
         from app.main import save_detection_event
-
         db = MagicMock()
         db["detections"].insert_one.return_value.inserted_id = "x"
         dets = [{"label": "cat", "confidence": 0.8, "bbox": [0, 0, 1, 1]}] * 3
@@ -153,7 +137,6 @@ class TestSaveDetectionEvent:
 
     def test_doc_contains_image(self):
         from app.main import save_detection_event
-
         db = MagicMock()
         db["detections"].insert_one.return_value.inserted_id = "y"
         save_detection_event(db, [], make_frame(), "test")
@@ -162,7 +145,6 @@ class TestSaveDetectionEvent:
 
     def test_doc_contains_source(self):
         from app.main import save_detection_event
-
         db = MagicMock()
         db["detections"].insert_one.return_value.inserted_id = "z"
         save_detection_event(db, [], make_frame(), "webcam")
@@ -190,20 +172,13 @@ class TestHealthRoute:
 # detect route
 class TestDetectRoute:
     @patch("app.main.save_detection_event", return_value="fake_id")
-    @patch(
-        "app.main.detect_objects",
-        return_value=[{"label": "person", "confidence": 0.9, "bbox": [0, 0, 1, 1]}],
-    )
+    @patch("app.main.detect_objects", return_value=[{"label": "person", "confidence": 0.9, "bbox": [0, 0, 1, 1]}])
     @patch("app.main.get_model")
     @patch("app.main.get_db")
     @patch("app.main.decode_base64_image")
-    def test_detect_returns_detections(
-        self, mock_decode, mock_db, mock_model, mock_det, mock_save, client
-    ):
+    def test_detect_returns_detections(self, mock_decode, mock_db, mock_model, mock_det, mock_save, client):
         mock_decode.return_value = make_frame()
-        resp = client.post(
-            "/detect", json={"image": "data:image/jpeg;base64,abc", "source": "test"}
-        )
+        resp = client.post("/detect", json={"image": "data:image/jpeg;base64,abc", "source": "test"})
         assert resp.status_code == 200
         assert resp.get_json()["count"] == 1
 
@@ -217,9 +192,7 @@ class TestDetectRoute:
     @patch("app.main.get_model")
     @patch("app.main.get_db")
     @patch("app.main.decode_base64_image")
-    def test_detect_no_save_when_empty(
-        self, mock_decode, mock_db, mock_model, mock_det, mock_save, client
-    ):
+    def test_detect_no_save_when_empty(self, mock_decode, mock_db, mock_model, mock_det, mock_save, client):
         mock_decode.return_value = make_frame()
         resp = client.post("/detect", json={"image": "data:image/jpeg;base64,abc"})
         assert resp.status_code == 200
@@ -234,8 +207,7 @@ class TestGetModel:
         main_module.get_model()
         main_module.get_model()
         mock_yolo.assert_called_once()
-
-
+        
 # connect_to_db
 class TestConnectToDb:
     @patch("app.main.time.sleep")
@@ -243,9 +215,10 @@ class TestConnectToDb:
     def test_connects_successfully(self, mock_client, mock_sleep):
         mock_client.return_value.admin.command.return_value = {"ok": 1}
         from app.main import connect_to_db
-
         db = connect_to_db()
         assert db is not None
+
+   
 
 
 # get_db
@@ -263,7 +236,6 @@ class TestGetDb:
 class TestDecodeBase64ImageInvalid:
     def test_raises_on_bad_bytes(self):
         from app.main import decode_base64_image
-
         bad_b64 = base64.b64encode(b"not an image").decode()
         with pytest.raises(ValueError, match="Could not decode image"):
             decode_base64_image(bad_b64)

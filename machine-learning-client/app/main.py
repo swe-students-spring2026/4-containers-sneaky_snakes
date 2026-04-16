@@ -1,5 +1,4 @@
 """Object detection service that stores detections in MongoDB."""
-
 from __future__ import annotations
 
 import base64
@@ -75,9 +74,7 @@ def decode_base64_image(data_url: str) -> np.ndarray:
     return img
 
 
-def detect_objects(
-    model: YOLO, frame: np.ndarray, confidence_threshold: float = CONFIDENCE_THRESHOLD
-) -> list[dict[str, Any]]:
+def detect_objects(model: YOLO, frame: np.ndarray, confidence_threshold: float = CONFIDENCE_THRESHOLD) -> list[dict[str, Any]]:
     results = model(frame, verbose=False)
     detections: list[dict[str, Any]] = []
     for result in results:
@@ -86,13 +83,11 @@ def detect_objects(
             if conf < confidence_threshold:
                 continue
             cls_id = int(box.cls[0])
-            detections.append(
-                {
-                    "label": str(model.names[cls_id]),
-                    "confidence": round(conf, 3),
-                    "bbox": [round(float(c), 1) for c in box.xyxy[0].tolist()],
-                }
-            )
+            detections.append({
+                "label": str(model.names[cls_id]),
+                "confidence": round(conf, 3),
+                "bbox": [round(float(c), 1) for c in box.xyxy[0].tolist()],
+            })
     return detections
 
 
@@ -105,9 +100,7 @@ def encode_frame_thumbnail(frame: np.ndarray, max_width: int = 320) -> str:
     return base64.b64encode(buf).decode("utf-8")
 
 
-def save_detection_event(
-    db, detections: list[dict[str, Any]], frame: np.ndarray, source: str
-) -> str:
+def save_detection_event(db, detections: list[dict[str, Any]], frame: np.ndarray, source: str) -> str:
     doc = {
         "timestamp": datetime.now(timezone.utc),
         "source": source,
@@ -119,40 +112,38 @@ def save_detection_event(
     return str(result.inserted_id)
 
 
-@app.get("/health")
+@app.get('/health')
 def health():
     try:
-        get_db().command("ping")
+        get_db().command('ping')
         get_model()
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 503
 
 
-@app.post("/detect")
+@app.post('/detect')
 def detect_route():
     payload = request.get_json(silent=True) or {}
-    image_data = payload.get("image")
-    source = payload.get("source", "browser-camera")
+    image_data = payload.get('image')
+    source = payload.get('source', 'browser-camera')
     try:
         frame = decode_base64_image(image_data)
         detections = detect_objects(get_model(), frame)
         inserted_id = None
         if detections or SAVE_EMPTY:
             inserted_id = save_detection_event(get_db(), detections, frame, source)
-        return jsonify(
-            {
-                "saved": bool(inserted_id),
-                "inserted_id": inserted_id,
-                "count": len(detections),
-                "detections": detections,
-            }
-        )
+        return jsonify({
+            'saved': bool(inserted_id),
+            'inserted_id': inserted_id,
+            'count': len(detections),
+            'detections': detections,
+        })
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 400
+        return jsonify({'error': str(exc)}), 400
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     get_db()
     get_model()
-    app.run(host="0.0.0.0", port=PORT, debug=False)
+    app.run(host='0.0.0.0', port=PORT, debug=False)

@@ -14,6 +14,8 @@ A containerized system that captures webcam frames, runs YOLOv8 object detection
 - Ryan Lu — [@CHEology](https://github.com/CHEology)
 - James Huang — [@JamesHuang2004](https://github.com/JamesHuang2004)
 - Jai — [@hyperjasm](https://github.com/hyperjasm)
+- Yusef — [@YusefMoustafa](https://github.com/YusefMoustafa)
+
 
 ## Tech Stack
 

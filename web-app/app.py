@@ -1,4 +1,5 @@
 """Flask dashboard that reads ML detections from MongoDB."""
+
 from __future__ import annotations
 import os
 from flask import Flask, jsonify, render_template
@@ -6,9 +7,11 @@ from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__,
-            template_folder=os.path.join(BASE_DIR, "templates"),
-            static_folder=os.path.join(BASE_DIR, "static"))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static"),
+)
 
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://mongodb:27017")
 DB_NAME = os.environ.get("DB_NAME", "ml_detections")
@@ -31,16 +34,22 @@ def get_stats():
     collection = get_collection()
     total = collection.count_documents({})
     unique_labels = collection.distinct("detections.label")
-    most_common = list(collection.aggregate([
-        {"$unwind": "$detections"},
-        {"$group": {"_id": "$detections.label", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-        {"$limit": 5},
-    ]))
+    most_common = list(
+        collection.aggregate(
+            [
+                {"$unwind": "$detections"},
+                {"$group": {"_id": "$detections.label", "count": {"$sum": 1}}},
+                {"$sort": {"count": -1}},
+                {"$limit": 5},
+            ]
+        )
+    )
     return {
         "total_snapshots": total,
         "unique_labels": len(unique_labels),
-        "most_common": [{"label": item["_id"], "count": item["count"]} for item in most_common],
+        "most_common": [
+            {"label": item["_id"], "count": item["count"]} for item in most_common
+        ],
     }
 
 

@@ -5,7 +5,6 @@ import pytest
 from app import app as flask_app
 
 
-
 @pytest.fixture
 def client():
     flask_app.config["TESTING"] = True
@@ -32,42 +31,61 @@ def fake_stats():
 
 #  get_recent_detections
 
+
 class TestGetRecentDetections:
     @patch("app.get_collection")
     def test_returns_a_list(self, mock_col):
         from app import get_recent_detections
-        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = [fake_doc()]
+
+        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = [
+            fake_doc()
+        ]
         result = get_recent_detections()
         assert isinstance(result, list)
 
     @patch("app.get_collection")
     def test_limit_defaults_to_20(self, mock_col):
         from app import get_recent_detections
-        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = []
+
+        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = (
+            []
+        )
         get_recent_detections()
-        mock_col.return_value.find.return_value.sort.return_value.limit.assert_called_with(20)
+        mock_col.return_value.find.return_value.sort.return_value.limit.assert_called_with(
+            20
+        )
 
     @patch("app.get_collection")
     def test_custom_limit_works(self, mock_col):
         from app import get_recent_detections
-        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = []
+
+        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = (
+            []
+        )
         get_recent_detections(limit=5)
-        mock_col.return_value.find.return_value.sort.return_value.limit.assert_called_with(5)
+        mock_col.return_value.find.return_value.sort.return_value.limit.assert_called_with(
+            5
+        )
 
     @patch("app.get_collection")
     def test_sorted_by_timestamp_desc(self, mock_col):
         from app import get_recent_detections
-        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = []
+
+        mock_col.return_value.find.return_value.sort.return_value.limit.return_value = (
+            []
+        )
         get_recent_detections()
         mock_col.return_value.find.return_value.sort.assert_called_with("timestamp", -1)
 
 
 #  get_stats
 
+
 class TestGetStats:
     @patch("app.get_collection")
     def test_has_right_keys(self, mock_col):
         from app import get_stats
+
         mock_col.return_value.count_documents.return_value = 0
         mock_col.return_value.distinct.return_value = []
         mock_col.return_value.aggregate.return_value = []
@@ -79,6 +97,7 @@ class TestGetStats:
     @patch("app.get_collection")
     def test_total_snapshots(self, mock_col):
         from app import get_stats
+
         mock_col.return_value.count_documents.return_value = 7
         mock_col.return_value.distinct.return_value = []
         mock_col.return_value.aggregate.return_value = []
@@ -87,6 +106,7 @@ class TestGetStats:
     @patch("app.get_collection")
     def test_unique_label_count(self, mock_col):
         from app import get_stats
+
         mock_col.return_value.count_documents.return_value = 0
         mock_col.return_value.distinct.return_value = ["person", "cat", "bottle"]
         mock_col.return_value.aggregate.return_value = []
@@ -95,6 +115,7 @@ class TestGetStats:
     @patch("app.get_collection")
     def test_most_common_label_and_count(self, mock_col):
         from app import get_stats
+
         mock_col.return_value.count_documents.return_value = 0
         mock_col.return_value.distinct.return_value = []
         mock_col.return_value.aggregate.return_value = [{"_id": "person", "count": 9}]
@@ -105,6 +126,7 @@ class TestGetStats:
     @patch("app.get_collection")
     def test_empty_db(self, mock_col):
         from app import get_stats
+
         mock_col.return_value.count_documents.return_value = 0
         mock_col.return_value.distinct.return_value = []
         mock_col.return_value.aggregate.return_value = []
@@ -114,6 +136,7 @@ class TestGetStats:
 
 
 #  index route
+
 
 class TestIndex:
     @patch("app.get_stats")
@@ -149,6 +172,7 @@ class TestIndex:
 
 #  /api/detections
 
+
 class TestApiDetections:
     @patch("app.get_recent_detections")
     def test_returns_200(self, mock_dets, client):
@@ -173,6 +197,7 @@ class TestApiDetections:
 
 
 # /api/stats
+
 
 class TestApiStats:
     @patch("app.get_stats")

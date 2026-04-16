@@ -1,6 +1,6 @@
 # Sneaky Snakes Real-Time Object Detection
 
-A containerized system that captures webcam frames, runs YOLOv8 object detection, and displays results on a live web dashboard.
+A containerized system that captures webcam frames, runs YOLOv8 object detection, and displays results on a live web dashboard. It serves as a study monitor system that aims to create a study environment by warning the user of "being distracted by cell phones" when it detects the user picking up his/her phone.
 
 ## How it works
 

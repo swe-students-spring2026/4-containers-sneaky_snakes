@@ -1,0 +1,20 @@
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    import-error,
+    import-outside-toplevel,
+    protected-access,
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-positional-arguments,
+    use-implicit-booleaness-not-comparison,
+    invalid-name,
+    global-statement,
+    broad-exception-caught,
+    redefined-outer-name,
+    unused-argument
+
+[FORMAT]
+max-line-length=130

@@ -8,6 +8,10 @@
 </div>
 {% endif %}
 
+<div id="standup-alert" class="alert-banner" style="display:{{ 'block' if focus_stats.nudge_active else 'none' }};">
+  You&rsquo;ve been sitting for over 45 minutes &mdash; time to stand up and stretch!
+</div>
+
 <section class="camera-panel">
   <h2>Camera Capture</h2>
   <p class="muted">This uses your browser camera, sends snapshots to the ML container, and stores detections in MongoDB.</p>
@@ -39,6 +43,22 @@
         <span class="muted">No data yet</span>
       {% endfor %}
     </div>
+  </div>
+  <div class="card">
+    <span class="card-label">Session Duration</span>
+    <span class="card-value" id="stat-session">{{ focus_stats.session_duration_seconds // 60 }} min</span>
+  </div>
+  <div class="card">
+    <span class="card-label">Phone Pickups Today</span>
+    <span class="card-value" id="stat-pickups">{{ focus_stats.phone_pickups_today }}</span>
+  </div>
+  <div class="card">
+    <span class="card-label">Status</span>
+    <span class="card-value" id="stat-focus-status">
+      {%- if focus_stats.nudge_active -%}Stand Up!
+      {%- elif focus_stats.session_duration_seconds > 0 -%}Seated
+      {%- else -%}Away{%- endif -%}
+    </span>
   </div>
 </section>
 
@@ -112,6 +132,12 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function formatDuration(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m} min ${s}s` : `${s}s`;
   }
 
   async function startCamera() {
@@ -218,8 +244,33 @@
       : `<span class="muted">No data yet</span>`;
   }
 
+  async function refreshFocus() {
+    const res = await fetch("/api/focus");
+    const data = await res.json();
+    if (data.error) return;
+
+    document.getElementById("stat-session").textContent = formatDuration(data.session_duration_seconds);
+    document.getElementById("stat-pickups").textContent = data.phone_pickups_today;
+
+    const statusCard = document.getElementById("stat-focus-status");
+    const alert = document.getElementById("standup-alert");
+    if (data.nudge_active) {
+      statusCard.textContent = "Stand Up!";
+      statusCard.style.color = "#92400e";
+      alert.style.display = "block";
+    } else if (data.session_duration_seconds > 0) {
+      statusCard.textContent = "Seated";
+      statusCard.style.color = "";
+      alert.style.display = "none";
+    } else {
+      statusCard.textContent = "Away";
+      statusCard.style.color = "";
+      alert.style.display = "none";
+    }
+  }
+
   async function refresh() {
-    await Promise.all([refreshFeed(), refreshStats()]);
+    await Promise.all([refreshFeed(), refreshStats(), refreshFocus()]);
   }
 
   startBtn.addEventListener("click", startCamera);

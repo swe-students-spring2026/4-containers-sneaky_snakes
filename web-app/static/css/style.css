@@ -3,7 +3,7 @@ header { background: white; border-bottom: 1px solid #ddd; padding: 18px 32px; }
 main { max-width: 980px; margin: 24px auto; padding: 0 16px 40px; }
 h1, h2 { margin: 0 0 16px; }
 section { margin-bottom: 28px; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
 .card { background: white; border: 1px solid #ddd; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
 .card.wide { grid-column: span 1; }
 .card-label { text-transform: uppercase; letter-spacing: 1px; color: #777; font-size: 12px; }
@@ -14,6 +14,7 @@ section { margin-bottom: 28px; }
 .tag { background: #eef2ff; color: #3f3fb5; border-radius: 999px; padding: 4px 10px; font-size: 14px; }
 .muted { color: #777; }
 .error-banner { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; }
+.alert-banner { background: #fef3c7; color: #92400e; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
 video { width: 100%; max-width: 640px; background: black; border-radius: 10px; margin-top: 14px; }
 .camera-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 button { border: 1px solid #bbb; background: #fff; border-radius: 8px; padding: 10px 14px; cursor: pointer; }

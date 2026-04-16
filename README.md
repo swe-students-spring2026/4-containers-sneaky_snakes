@@ -35,4 +35,13 @@ Make sure Docker is running. The web dashboard will be available at `http://loca
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` in both `machine-learning-client/` and `web-app/` and fill in the values.
+MONGO_URI=mongodb://localhost:27017
+DB_NAME=ml_detections
+PORT=5001
+ML_API_URL=http://localhost:8000/detect
+MONGO_URI=mongodb://localhost:27017
+MONGO_DBNAME=ml_detections
+PORT=8000
+CONFIDENCE_THRESHOLD=0.4
+MAX_IMAGE_WIDTH=960
+SAVE_EMPTY=0

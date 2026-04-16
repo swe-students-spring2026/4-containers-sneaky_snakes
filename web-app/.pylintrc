@@ -1,0 +1,7 @@
+[MESSAGES CONTROL]
+disable=
+    # route handlers and small helpers; docstrings add noise without benefit
+    missing-function-docstring
+
+[FORMAT]
+max-line-length=100

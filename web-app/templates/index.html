@@ -155,6 +155,12 @@
         statusEl.textContent = `Detect error: ${data.error || res.statusText}`;
         return;
       }
+      // Check for both person and cell phone
+      const labels = (data.detections || []).map(d => d.label);
+      if (labels.includes('person') && labels.includes('cell phone')) {
+        document.body.classList.add('red-tone');
+        setTimeout(() => document.body.classList.remove('red-tone'), 10000);
+      }
       const tags = (data.detections || []).length
         ? data.detections.map(d => `<span class="tag">${escapeHtml(d.label)} ${Math.round(d.confidence * 100)}%</span>`).join("")
         : `<span class="muted">No objects detected in this frame</span>`;

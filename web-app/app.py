@@ -4,7 +4,6 @@ from __future__ import annotations
 import os
 from flask import Flask, jsonify, render_template
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(
@@ -59,7 +58,7 @@ def index():
         detections = get_recent_detections()
         stats = get_stats()
         db_error = False
-    except PyMongoError:
+    except Exception:
         detections = []
         stats = {"total_snapshots": 0, "unique_labels": 0, "most_common": []}
         db_error = True
@@ -76,7 +75,7 @@ def index():
 def api_detections():
     try:
         return jsonify(get_recent_detections())
-    except PyMongoError:
+    except Exception:
         return jsonify({"error": "Could not reach database"}), 503
 
 
@@ -84,7 +83,7 @@ def api_detections():
 def api_stats():
     try:
         return jsonify(get_stats())
-    except PyMongoError:
+    except Exception:
         return jsonify({"error": "Could not reach database"}), 503
 
 

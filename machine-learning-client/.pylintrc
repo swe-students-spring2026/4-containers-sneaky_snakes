@@ -1,20 +1,42 @@
+[MASTER]
+# Analyse import fallbacks so missing-optional-deps don't fail CI.
+analyse-fallback-blocks=no
+
 [MESSAGES CONTROL]
 disable=
+    # Module-level mutable state vars don't need UPPER_CASE (they aren't consts)
+    invalid-name,
+    # Intentional singleton pattern in get_db / get_model / process_focus_state
+    global-statement,
+    # Flask route handlers intentionally catch-all to return 4xx/5xx responses
+    broad-exception-caught,
+    # ---- test-file specific ----
+    # pytest fixtures shadow outer names by design
+    redefined-outer-name,
+    # mock arguments are passed by decorator but not always used directly
+    unused-argument,
+    # internal attributes accessed via main_module._x in tests
+    protected-access,
+    # imports inside test methods isolate module state resets
+    import-outside-toplevel,
+    # test helper functions are short; docstrings add noise
     missing-module-docstring,
     missing-class-docstring,
     missing-function-docstring,
-    import-error,
-    import-outside-toplevel,
-    protected-access,
-    too-few-public-methods,
+    # pytest test methods can legitimately take many fixture args
     too-many-arguments,
     too-many-positional-arguments,
+    # `== []` in assertions is intentional and more explicit than `not x`
     use-implicit-booleaness-not-comparison,
-    invalid-name,
-    global-statement,
-    broad-exception-caught,
-    redefined-outer-name,
-    unused-argument
+    # single-method test classes are the norm with pytest class grouping
+    too-few-public-methods
+
+[TYPECHECK]
+# These C-extension / third-party packages may not be importable in every
+# environment (e.g. local dev without the heavy ML deps installed).
+ignored-modules=cv2,ultralytics,flask_cors
+# Allow dynamic cv2 members (CAP_PROP_*, COLOR_*, etc.)
+generated-members=cv2.*
 
 [FORMAT]
-max-line-length=130
+max-line-length=100

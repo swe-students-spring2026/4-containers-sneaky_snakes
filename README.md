@@ -1,3 +1,7 @@
+[![lint-free](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/lint.yml)
+
+[![log github events](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/event-logger.yml/badge.svg)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/event-logger.yml)
+
 # Sneaky Snakes Real-Time Object Detection
 
 A containerized system that captures webcam frames, runs YOLOv8 object detection, and displays results on a live web dashboard.

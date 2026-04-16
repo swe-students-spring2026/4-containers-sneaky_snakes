@@ -1,6 +1,7 @@
 [![lint-free](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/lint.yml)
 [![log github events](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/event-logger.yml/badge.svg)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/event-logger.yml)
-
+[![CI (machine learning)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/ci-ml.yml/badge.svg)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/ci-ml.yml)
+[![CI (web app)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/webapp-ci.yml/badge.svg)](https://github.com/swe-students-spring2026/4-containers-sneaky_snakes/actions/workflows/webapp-ci.yml)
 
 # Sneaky Snakes Real-Time Object Detection
 
